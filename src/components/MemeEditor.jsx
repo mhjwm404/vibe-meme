@@ -3,43 +3,56 @@ import './MemeEditor.css'
 
 function MemeEditor({
   imageFile,
-  topText,
-  bottomText,
-  fontSize,
-  topTextColor,
-  bottomTextColor,
-  topTextPosition,
-  bottomTextPosition,
-  onTopTextPositionChange,
-  onBottomTextPositionChange,
+  textItems,
+  selectedTextId,
+  onTextClick,
+  onTextUpdate,
+  onCanvasClick,
 }) {
   const canvasRef = useRef(null)
-  const [isDragging, setIsDragging] = useState(null) // 'top' | 'bottom' | null
+  const [isDragging, setIsDragging] = useState(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [isEditingText, setIsEditingText] = useState(null)
   const imageRef = useRef(null)
+  const inputRef = useRef(null)
 
-  // 绘制文字函数
-  const drawText = (ctx, text, x, y, fontSize, textColor) => {
+  // 绘制单个文字项
+  const drawTextItem = (ctx, textItem, isSelected) => {
+    const canvas = canvasRef.current
+    if (!canvas || !textItem.text) return
+
+    const x = canvas.width * textItem.position.x
+    const y = canvas.height * textItem.position.y
+
     // 设置文字样式
-    ctx.font = `bold ${fontSize}px Arial`
+    ctx.font = `600 ${textItem.fontSize}px -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     
-    // 计算文字宽度，用于添加背景
-    const metrics = ctx.measureText(text)
+    // 计算文字宽度
+    const metrics = ctx.measureText(textItem.text)
     const textWidth = metrics.width
-    const textHeight = fontSize
-    const padding = 10
+    const textHeight = textItem.fontSize * 1.2
+    const padding = textItem.fontSize * 0.3
 
-    // 绘制黑色背景（圆角矩形）
+    // 绘制半透明背景
     const bgX = x - textWidth / 2 - padding
     const bgY = y - textHeight / 2 - padding
     const bgWidth = textWidth + padding * 2
     const bgHeight = textHeight + padding * 2
-    const radius = 5
+    const radius = textItem.fontSize * 0.2
 
-    // 绘制圆角矩形（兼容性更好的方法）
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
+    // 如果被选中，绘制选中状态
+    if (isSelected) {
+      ctx.fillStyle = 'rgba(0, 122, 255, 0.15)'
+      ctx.strokeStyle = 'rgba(0, 122, 255, 0.8)'
+      ctx.lineWidth = 3
+    } else {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
+      ctx.strokeStyle = 'transparent'
+    }
+
+    // 绘制圆角矩形背景
     ctx.beginPath()
     ctx.moveTo(bgX + radius, bgY)
     ctx.lineTo(bgX + bgWidth - radius, bgY)
@@ -52,15 +65,25 @@ function MemeEditor({
     ctx.quadraticCurveTo(bgX, bgY, bgX + radius, bgY)
     ctx.closePath()
     ctx.fill()
+    
+    if (isSelected) {
+      ctx.stroke()
+    }
 
-    // 绘制指定颜色的文字
-    ctx.fillStyle = textColor || '#FFFFFF'
-    ctx.fillText(text, x, y)
-
-    // 绘制黑色描边（增强对比度）
-    ctx.strokeStyle = 'black'
-    ctx.lineWidth = 2
-    ctx.strokeText(text, x, y)
+    // 绘制文字（带阴影效果）
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
+    ctx.shadowBlur = textItem.fontSize * 0.1
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = textItem.fontSize * 0.05
+    
+    ctx.fillStyle = textItem.color
+    ctx.fillText(textItem.text, x, y)
+    
+    // 重置阴影
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 0
   }
 
   // 重绘画布
@@ -77,23 +100,18 @@ function MemeEditor({
     // 绘制图片
     ctx.drawImage(imageRef.current, 0, 0)
 
-    // 计算文字位置
-    const topX = topTextPosition ? canvas.width * topTextPosition.x : canvas.width / 2
-    const topY = topTextPosition ? canvas.height * topTextPosition.y : canvas.height * 0.1
-    const bottomX = bottomTextPosition ? canvas.width * bottomTextPosition.x : canvas.width / 2
-    const bottomY = bottomTextPosition ? canvas.height * bottomTextPosition.y : canvas.height * 0.9
-
-    // 绘制顶部文字
-    if (topText) {
-      drawText(ctx, topText, topX, topY, fontSize, topTextColor)
-    }
-
-    // 绘制底部文字
-    if (bottomText) {
-      drawText(ctx, bottomText, bottomX, bottomY, fontSize, bottomTextColor)
+    // 绘制所有文字（先绘制未选中的，再绘制选中的，让选中的在最上层）
+    textItems
+      .filter(item => item.id !== selectedTextId)
+      .forEach(item => drawTextItem(ctx, item, false))
+    
+    const selectedItem = textItems.find(item => item.id === selectedTextId)
+    if (selectedItem) {
+      drawTextItem(ctx, selectedItem, true)
     }
   }
 
+  // 加载图片
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -106,13 +124,13 @@ function MemeEditor({
 
     // 如果没有图片，显示占位符
     if (!imageFile) {
-      ctx.fillStyle = '#2a2a2a'
+      ctx.fillStyle = '#f5f5f7'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.fillStyle = '#888'
-      ctx.font = '24px Arial'
+      ctx.fillStyle = '#86868b'
+      ctx.font = '400 20px -apple-system, BlinkMacSystemFont, sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText('请选择一张图片', canvas.width / 2, canvas.height / 2)
+      ctx.fillText('选择或拖入一张图片开始创作', canvas.width / 2, canvas.height / 2)
       return
     }
 
@@ -129,10 +147,10 @@ function MemeEditor({
     }
 
     img.onerror = () => {
-      ctx.fillStyle = '#2a2a2a'
+      ctx.fillStyle = '#f5f5f7'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.fillStyle = '#ff6b35'
-      ctx.font = '24px Arial'
+      ctx.fillStyle = '#ff3b30'
+      ctx.font = '400 20px -apple-system, BlinkMacSystemFont, sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText('图片加载失败', canvas.width / 2, canvas.height / 2)
@@ -151,7 +169,7 @@ function MemeEditor({
     if (imageRef.current) {
       redrawCanvas()
     }
-  }, [topText, bottomText, fontSize, topTextColor, bottomTextColor, topTextPosition, bottomTextPosition])
+  }, [textItems, selectedTextId])
 
   // 获取canvas上的实际坐标（考虑缩放）
   const getCanvasCoordinates = (e) => {
@@ -169,28 +187,37 @@ function MemeEditor({
   }
 
   // 检查点击是否在文字区域内
-  const isPointInText = (x, y, text, textX, textY, fontSize) => {
+  const getTextItemAtPoint = (x, y) => {
     const canvas = canvasRef.current
-    if (!canvas) return false
+    if (!canvas) return null
 
     const ctx = canvas.getContext('2d')
-    ctx.font = `bold ${fontSize}px Arial`
-    const metrics = ctx.measureText(text)
-    const textWidth = metrics.width
-    const textHeight = fontSize
-    const padding = 10
 
-    const bgX = textX - textWidth / 2 - padding
-    const bgY = textY - textHeight / 2 - padding
-    const bgWidth = textWidth + padding * 2
-    const bgHeight = textHeight + padding * 2
+    // 从后往前检查（后面的文字在上层）
+    for (let i = textItems.length - 1; i >= 0; i--) {
+      const item = textItems[i]
+      if (!item.text) continue
 
-    return (
-      x >= bgX &&
-      x <= bgX + bgWidth &&
-      y >= bgY &&
-      y <= bgY + bgHeight
-    )
+      const textX = canvas.width * item.position.x
+      const textY = canvas.height * item.position.y
+
+      ctx.font = `600 ${item.fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
+      const metrics = ctx.measureText(item.text)
+      const textWidth = metrics.width
+      const textHeight = item.fontSize * 1.2
+      const padding = item.fontSize * 0.3
+
+      const bgX = textX - textWidth / 2 - padding
+      const bgY = textY - textHeight / 2 - padding
+      const bgWidth = textWidth + padding * 2
+      const bgHeight = textHeight + padding * 2
+
+      if (x >= bgX && x <= bgX + bgWidth && y >= bgY && y <= bgY + bgHeight) {
+        return item
+      }
+    }
+
+    return null
   }
 
   // 鼠标按下事件
@@ -200,30 +227,45 @@ function MemeEditor({
     const coords = getCanvasCoordinates(e)
     if (!coords) return
 
-    const canvas = canvasRef.current
-    const topX = topTextPosition ? canvas.width * topTextPosition.x : canvas.width / 2
-    const topY = topTextPosition ? canvas.height * topTextPosition.y : canvas.height * 0.1
-    const bottomX = bottomTextPosition ? canvas.width * bottomTextPosition.x : canvas.width / 2
-    const bottomY = bottomTextPosition ? canvas.height * bottomTextPosition.y : canvas.height * 0.9
+    const clickedItem = getTextItemAtPoint(coords.x, coords.y)
 
-    // 检查是否点击在顶部文字上
-    if (topText && isPointInText(coords.x, coords.y, topText, topX, topY, fontSize)) {
-      setIsDragging('top')
+    if (clickedItem) {
+      // 点击在文字上
+      onTextClick(clickedItem.id)
+      
+      const canvas = canvasRef.current
+      const textX = canvas.width * clickedItem.position.x
+      const textY = canvas.height * clickedItem.position.y
+
+      setIsDragging(clickedItem.id)
       setDragOffset({
-        x: coords.x - topX,
-        y: coords.y - topY,
+        x: coords.x - textX,
+        y: coords.y - textY,
       })
-      return
+    } else {
+      // 点击在空白处，取消选中
+      onTextClick(null)
     }
+  }
 
-    // 检查是否点击在底部文字上
-    if (bottomText && isPointInText(coords.x, coords.y, bottomText, bottomX, bottomY, fontSize)) {
-      setIsDragging('bottom')
-      setDragOffset({
-        x: coords.x - bottomX,
-        y: coords.y - bottomY,
-      })
-      return
+  // 双击编辑文字
+  const handleDoubleClick = (e) => {
+    if (!imageRef.current) return
+
+    const coords = getCanvasCoordinates(e)
+    if (!coords) return
+
+    const clickedItem = getTextItemAtPoint(coords.x, coords.y)
+
+    if (clickedItem) {
+      setIsEditingText(clickedItem.id)
+      // 延迟聚焦，确保输入框已渲染
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus()
+          inputRef.current.select()
+        }
+      }, 0)
     }
   }
 
@@ -242,11 +284,9 @@ function MemeEditor({
     const clampedX = Math.max(0, Math.min(1, newX))
     const clampedY = Math.max(0, Math.min(1, newY))
 
-    if (isDragging === 'top') {
-      onTopTextPositionChange({ x: clampedX, y: clampedY })
-    } else if (isDragging === 'bottom') {
-      onBottomTextPositionChange({ x: clampedX, y: clampedY })
-    }
+    onTextUpdate(isDragging, {
+      position: { x: clampedX, y: clampedY }
+    })
   }
 
   // 鼠标释放事件
@@ -255,9 +295,28 @@ function MemeEditor({
     setDragOffset({ x: 0, y: 0 })
   }
 
+  // 点击canvas空白处添加文字
+  const handleCanvasClick = (e) => {
+    if (isDragging) return // 如果在拖动，不添加新文字
+    if (!imageRef.current) return
+
+    const coords = getCanvasCoordinates(e)
+    if (!coords) return
+
+    const clickedItem = getTextItemAtPoint(coords.x, coords.y)
+    if (clickedItem) return // 如果点击在文字上，不添加新文字
+
+    const canvas = canvasRef.current
+    const position = {
+      x: coords.x / canvas.width,
+      y: coords.y / canvas.height,
+    }
+
+    onCanvasClick(position)
+  }
+
   // 触摸事件支持（移动端）
   const handleTouchStart = (e) => {
-    e.preventDefault()
     const touch = e.touches[0]
     const syntheticEvent = {
       clientX: touch.clientX,
@@ -267,8 +326,8 @@ function MemeEditor({
   }
 
   const handleTouchMove = (e) => {
-    e.preventDefault()
     if (!isDragging) return
+    e.preventDefault()
     const touch = e.touches[0]
     const syntheticEvent = {
       clientX: touch.clientX,
@@ -277,13 +336,12 @@ function MemeEditor({
     handleMouseMove(syntheticEvent)
   }
 
-  const handleTouchEnd = (e) => {
-    e.preventDefault()
+  const handleTouchEnd = () => {
     handleMouseUp()
   }
 
   return (
-    <div className="meme-editor" style={{ position: 'relative' }}>
+    <div className="meme-editor">
       <canvas
         id="meme-canvas"
         ref={canvasRef}
@@ -294,13 +352,36 @@ function MemeEditor({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onClick={handleCanvasClick}
+        onDoubleClick={handleDoubleClick}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ cursor: isDragging ? 'grabbing' : (topText || bottomText ? 'grab' : 'default') }}
+        style={{ 
+          cursor: isDragging ? 'grabbing' : (imageFile ? 'crosshair' : 'default')
+        }}
       />
       {isDragging && (
-        <div className="drag-hint">拖动文字到任意位置</div>
+        <div className="drag-hint">
+          <span>拖动调整位置</span>
+        </div>
+      )}
+      {isEditingText && (
+        <div className="text-input-overlay">
+          <input
+            ref={inputRef}
+            type="text"
+            value={textItems.find(t => t.id === isEditingText)?.text || ''}
+            onChange={(e) => onTextUpdate(isEditingText, { text: e.target.value })}
+            onBlur={() => setIsEditingText(null)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setIsEditingText(null)
+              }
+            }}
+            className="text-input-field"
+          />
+        </div>
       )}
     </div>
   )
