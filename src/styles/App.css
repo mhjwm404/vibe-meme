@@ -214,6 +214,134 @@ body {
   flex-shrink: 0;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.save-btn {
+  padding: 0.85rem 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  background: #34c759;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(52, 199, 89, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #28a745;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.35);
+}
+
+.save-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(52, 199, 89, 0.25);
+}
+
+.save-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #86868b;
+  box-shadow: none;
+}
+
+.publish-btn {
+  padding: 0.85rem 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+.publish-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.publish-btn:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.publish-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.publish-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.publish-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #86868b;
+  box-shadow: none;
+}
+
+.publish-btn .btn-icon,
+.publish-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+.create-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 64px);
+}
+
+.bottom-controls .action-buttons {
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .save-btn,
+  .publish-btn,
+  .download-btn {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 1024px) {
   .main-layout {
     grid-template-columns: 240px 1fr;

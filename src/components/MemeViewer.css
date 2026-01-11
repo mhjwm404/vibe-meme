@@ -1,0 +1,186 @@
+.meme-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.meme-viewer-container {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: zoomIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.close-button {
+  position: absolute;
+  top: -50px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+}
+
+.close-button:hover {
+  background: white;
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.meme-viewer-content {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  max-width: 100%;
+  max-height: calc(90vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meme-viewer-image {
+  max-width: 100%;
+  max-height: calc(90vh - 120px);
+  width: auto;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.meme-viewer-info {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-top: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+  max-width: 600px;
+}
+
+.meme-viewer-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.meme-viewer-meta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  font-size: 14px;
+  color: #86868b;
+}
+
+.meme-viewer-upvotes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.meme-viewer-date {
+  font-weight: 400;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .meme-viewer-overlay {
+    padding: 10px;
+  }
+
+  .meme-viewer-container {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+
+  .close-button {
+    top: -45px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .meme-viewer-content {
+    max-height: calc(95vh - 100px);
+    border-radius: 8px;
+  }
+
+  .meme-viewer-image {
+    max-height: calc(95vh - 100px);
+  }
+
+  .meme-viewer-info {
+    padding: 12px 16px;
+    margin-top: 12px;
+    min-width: auto;
+    width: 100%;
+  }
+
+  .meme-viewer-title {
+    font-size: 16px;
+  }
+
+  .meme-viewer-meta {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+  }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+  .close-button {
+    width: 44px;
+    height: 44px;
+  }
+}
